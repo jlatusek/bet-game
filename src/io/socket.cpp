@@ -24,6 +24,14 @@ io::socket::~socket()
 {
     ::close(fd);
 }
+io::socket::descriptor io::socket::get_descriptor() const
+{
+    return fd;
+}
+void io::socket::set_non_blocking() const
+{
+    throw std::runtime_error("Not implemented yet");
+}
 
 void io::socket::bind(const int port)
 {
@@ -49,7 +57,7 @@ void io::socket::listen(const int backlog) const
     }
 }
 
-io::socket::sptr io::socket::accept() const
+io::socket::uptr io::socket::accept() const
 {
     const int cli_fd = ::accept(fd, nullptr, 0);
     if (cli_fd < 0)
@@ -57,7 +65,36 @@ io::socket::sptr io::socket::accept() const
         throw std::runtime_error(std::format("Cannot accept incoming connection: {}", strerror(errno)));
     }
 
-    return create_accepted(cli_fd);
+    return std::make_unique<io::socket>(cli_fd);
+}
+void io::socket::connect(const int port, const std::string &cp)
+{
+    sockaddr_in server_addr{};
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr(cp.c_str());
+    server_addr.sin_port = htons(port);
+
+    if (::connect(fd, reinterpret_cast<struct sockaddr *>(&server_addr), sizeof(server_addr)) != 0)
+    {
+        throw std::runtime_error(std::format("Cannot connect acceptor socket: {}", strerror(errno)));
+    };
+
+}
+void io::socket::send(const std::string &msg) const
+{
+    write(msg.c_str(), msg.length());
+}
+std::string io::socket::receive() const
+{
+    std::string msg;
+    msg.clear();
+    char buff[READ_BUFF_SIZE];
+    size_t r = 0;
+    ::memset(buff, 0, READ_BUFF_SIZE);
+    r = read(buff, READ_BUFF_SIZE);
+    msg.append(buff, buff + r);
+    return msg;
 }
 
 size_t io::socket::read(void *buff, const size_t len) const

@@ -1,33 +1,20 @@
 #include "config.h"
+#include "socket.h"
 #include "tools.h"
 
 #include <arpa/inet.h>
 #include <cstring>
+#include <memory>
 #include <sys/socket.h>
 #include <unistd.h>
 
-int main(void)
+int main(int argc, char *argv[])
 {
-    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    VerifyOrReturnLogErrorMsg(server_socket != -1, server_socket, "Failed to create socket");
-    sockaddr_in address{};
-    address.sin_family = AF_INET;
-    address.sin_port = htons(8080);
-    address.sin_addr.s_addr = INADDR_ANY;
+    auto socket = std::make_unique<io::socket>(AF_INET, SOCK_STREAM, 0);
+    socket->bind(SERVER_PORT);
+    socket->listen(BEGASEP_NUM_CLIENTS);
+    auto client_socket = socket->accept();
 
-    int ret = bind(server_socket, reinterpret_cast<struct sockaddr *>(&address), sizeof(address));
-    VerifyOrReturnLogErrorMsg(ret != -1, ret, "Failed to bind socket");
-
-    listen(server_socket, BEGASEP_NUM_CLIENTS);
-
-    int client_socket = accept(server_socket, NULL, NULL);
-
-    char message[] = "Hello, World!";
-
-    send(client_socket, message, strlen(message), 0);
-
-    // Close the client socket
-    close(client_socket);
-
+    client_socket->send("Hejka naklejka");
     return 0;
 }

@@ -1,9 +1,11 @@
 #include "config.h"
+#include "socket.h"
 #include "tools.h"
 
 #include <arpa/inet.h>
 #include <cstring>
 #include <iostream>
+#include <memory>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -33,13 +35,10 @@ int bet_game(int sockfd)
 
 int main(int argc, char *argv[])
 {
-    struct sockaddr_in server_addr = {};
-    int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-    VerifyOrReturnLogErrorMsg(sock_fd != 1, sock_fd, "Socket creation failed");
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    server_addr.sin_port = htons(SERVER_PORT);
+    auto socket = std::make_unique<io::socket>(AF_INET, SOCK_STREAM, 0);
+    socket->connect(SERVER_PORT, "127.0.0.1");
 
-    int ret = connect(sock_fd, reinterpret_cast<struct sockaddr *>(&server_addr), sizeof(server_addr));
-    VerifyOrReturnLogErrorMsg(ret != 0, ret, "Connection to server failed");
+    auto msg = socket->receive();
+    std::cout << "Received message: " << msg << std::endl;
+
 }

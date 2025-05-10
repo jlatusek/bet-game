@@ -10,6 +10,7 @@ class socket
     typedef std::shared_ptr<socket> sptr;
     typedef std::unique_ptr<socket> uptr;
     typedef int descriptor;
+    static constexpr uint READ_BUFF_SIZE = 512;
 
     virtual ~socket();
 
@@ -17,26 +18,26 @@ class socket
     virtual void set_non_blocking() const;
     virtual void bind(int);
     virtual void listen(int) const;
-    virtual socket::sptr accept() const;
+    virtual socket::uptr accept() const;
+    virtual void connect(int port, const std::string &cp);
 
-    virtual void send(const std::string &) const = 0;
-    virtual void receive(std::string &) const = 0;
-
-  protected:
     socket(int, int, int);
     explicit socket(int);
 
-    virtual void write(const void *, size_t) const;
-    virtual size_t read(void *, size_t) const;
-
-  private:
-    descriptor fd;
-    virtual socket::sptr create_accepted(descriptor) const = 0;
+    virtual void send(const std::string &) const;
+    virtual std::string receive() const;
 
     socket(const socket &) = delete;
     socket &operator=(const socket &) = delete;
     socket(socket &&) = delete;
     socket &operator=(socket &&) = delete;
+
+  protected:
+    virtual void write(const void *, size_t) const;
+    virtual size_t read(void *, size_t) const;
+
+  private:
+    int fd;
 };
 
 } // namespace io

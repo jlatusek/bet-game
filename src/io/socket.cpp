@@ -1,4 +1,5 @@
-#include "../../include/io/socket.h"
+#include "io/socket.h"
+
 #include <arpa/inet.h>
 #include <cstring>
 #include <fcntl.h>
@@ -8,7 +9,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-io::socket::socket(const int domain, const int type, const int protocol) : fd(::socket(domain, type, protocol))
+
+io::Socket::Socket(const int domain, const int type, const int protocol)
+    : FileDescriptor(::socket(domain, type, protocol))
 {
     if (fd < 0)
     {
@@ -16,24 +19,16 @@ io::socket::socket(const int domain, const int type, const int protocol) : fd(::
     }
 }
 
-io::socket::socket(const int fd) : fd(fd)
+io::Socket::Socket(const int fd) : FileDescriptor(fd)
 {
 }
 
-io::socket::~socket()
+io::Socket::~Socket()
 {
     ::close(fd);
 }
-io::socket::descriptor io::socket::get_descriptor() const
-{
-    return fd;
-}
-void io::socket::set_non_blocking() const
-{
-    throw std::runtime_error("Not implemented yet");
-}
 
-void io::socket::bind(const int port)
+void io::Socket::bind(const int port)
 {
     sockaddr_in addr{};
 
@@ -49,7 +44,7 @@ void io::socket::bind(const int port)
     }
 }
 
-void io::socket::listen(const int backlog) const
+void io::Socket::listen(const int backlog)
 {
     if (::listen(fd, backlog) != 0)
     {
@@ -57,7 +52,7 @@ void io::socket::listen(const int backlog) const
     }
 }
 
-io::socket::uptr io::socket::accept() const
+io::Socket::sptr io::Socket::accept()
 {
     const int cli_fd = ::accept(fd, nullptr, 0);
     if (cli_fd < 0)
@@ -65,9 +60,10 @@ io::socket::uptr io::socket::accept() const
         throw std::runtime_error(std::format("Cannot accept incoming connection: {}", strerror(errno)));
     }
 
-    return std::make_unique<io::socket>(cli_fd);
+    return std::make_unique<io::Socket>(cli_fd);
 }
-void io::socket::connect(const int port, const std::string &cp)
+
+void io::Socket::connect(const int port, const std::string &cp)
 {
     sockaddr_in server_addr{};
 
@@ -79,44 +75,4 @@ void io::socket::connect(const int port, const std::string &cp)
     {
         throw std::runtime_error(std::format("Cannot connect acceptor socket: {}", strerror(errno)));
     };
-
-}
-void io::socket::send(const std::string &msg) const
-{
-    write(msg.c_str(), msg.length());
-}
-std::string io::socket::receive() const
-{
-    std::string msg;
-    msg.clear();
-    char buff[READ_BUFF_SIZE];
-    size_t r = 0;
-    ::memset(buff, 0, READ_BUFF_SIZE);
-    r = read(buff, READ_BUFF_SIZE);
-    msg.append(buff, buff + r);
-    return msg;
-}
-
-size_t io::socket::read(void *buff, const size_t len) const
-{
-    const ssize_t r = ::read(fd, buff, len);
-    if (r < 0)
-    {
-        throw std::runtime_error(std::format("Cannot read from socket: {}", strerror(errno)));
-    }
-    else if (0 == r)
-    {
-        // TODO maybe we should indicate this error in other way?
-        throw std::runtime_error("Connection closed by host");
-    }
-
-    return r;
-}
-
-void io::socket::write(const void *buff, const size_t len) const
-{
-    if (const size_t w = ::write(fd, buff, len); w < len)
-    {
-        throw std::runtime_error(std::format("Cannot write to socket: {}", strerror(errno)));
-    }
 }

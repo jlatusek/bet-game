@@ -13,13 +13,13 @@ add_library(io
 )
 target_include_directories(io PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_executable(server ${CMAKE_CURRENT_SOURCE_DIR}/src/server.cpp)
-target_include_directories(server PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(server io)
+add_executable(bet-server ${CMAKE_CURRENT_SOURCE_DIR}/src/server.cpp)
+target_include_directories(bet-server PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(bet-server io)
 
-add_executable(client ${CMAKE_CURRENT_SOURCE_DIR}/src/client.cpp)
-target_include_directories(client PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(client io)
+add_executable(bet-client ${CMAKE_CURRENT_SOURCE_DIR}/src/client.cpp)
+target_include_directories(bet-client PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(bet-client io)
 
 include(GoogleTest)
 find_package(GTest REQUIRED)

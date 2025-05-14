@@ -6,7 +6,11 @@ enable_testing()
 
 set(CMAKE_CXX_STANDARD 26)
 
-add_library(io ${CMAKE_CURRENT_SOURCE_DIR}/src/io/socket.cpp)
+add_library(io
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/io/socket.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/event.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/epoll.cpp
+)
 target_include_directories(io PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_executable(server ${CMAKE_CURRENT_SOURCE_DIR}/src/server.cpp)

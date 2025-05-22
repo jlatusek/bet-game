@@ -8,7 +8,7 @@
 epoll_event get_epoll_posix_from_event(const event::Event &ev)
 {
     epoll_event epoll_ev{};
-    epoll_ev.data.fd = ev.getSocket()->get_posix_descriptor();
+    epoll_ev.data.fd = ev.get_fd()->get_posix_descriptor();
     epoll_ev.events = ev.get_posix_event();
     return epoll_ev;
 }
@@ -23,7 +23,7 @@ Epoll::Epoll() : epfd(epoll_create1(0))
 
 void Epoll::add(const event::Event &ev)
 {
-    const int fd = ev.getSocket()->get_posix_descriptor();
+    const int fd = ev.get_fd()->get_posix_descriptor();
     if (const auto search = registered_events.find(fd); search != registered_events.end())
     {
         throw std::runtime_error(std::format("Events for specified fd: {}, already registered", fd));
@@ -40,7 +40,7 @@ void Epoll::add(const event::Event &ev)
 
 void Epoll::modify(const event::Event &ev)
 {
-    const int fd = ev.getSocket()->get_posix_descriptor();
+    const int fd = ev.get_fd()->get_posix_descriptor();
     if (const auto search = registered_events.find(fd); search == registered_events.end())
     {
         throw std::runtime_error(std::format("Events for specified fd: {}, do not exists", fd));
@@ -57,7 +57,7 @@ void Epoll::modify(const event::Event &ev)
 
 void Epoll::del(const event::Event &ev)
 {
-    const int fd = ev.getSocket()->get_posix_descriptor();
+    const int fd = ev.get_fd()->get_posix_descriptor();
     if (const auto search = registered_events.find(fd); search == registered_events.end())
     {
         throw std::runtime_error(std::format("Events for specified fd: {}, do not exists", fd));

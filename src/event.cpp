@@ -15,7 +15,7 @@ unsigned int event::Event::get_posix_event() const
     return posix_ev;
 }
 
-io::FileDescriptor::sptr event::Event::getSocket() const
+io::FileDescriptor::sptr event::Event::get_fd() const
 {
     return fd;
 }

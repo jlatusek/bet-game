@@ -15,7 +15,7 @@ class Event
     explicit Event(io::FileDescriptor::sptr fd, std::set<EPOLL_EVENTS> events);
     Event() = default;
     [[nodiscard]] unsigned int get_posix_event() const;
-    [[nodiscard]] io::FileDescriptor::sptr getSocket() const;
+    [[nodiscard]] io::FileDescriptor::sptr get_fd() const;
     friend Epoll;
 
   private:

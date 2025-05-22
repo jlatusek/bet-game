@@ -83,6 +83,7 @@ std::vector<event::Event> Epoll::wait()
     {
         throw ::std::runtime_error(std::format("epoll_wait failed with error: {}", strerror(errno)));
     }
+    captured_events.reserve(nfds);
     for (auto i = 0; i < nfds; ++i)
     {
         captured_events.push_back(registered_events[events[i].data.fd]);

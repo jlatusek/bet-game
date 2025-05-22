@@ -1,5 +1,5 @@
 #pragma once
-#include "io/socket.h"
+#include "../io/socket.h"
 
 #include <set>
 #include <sys/epoll.h>
@@ -24,3 +24,11 @@ class Event
 };
 
 } // namespace event
+
+template <> struct std::hash<event::Event>
+{
+    std::size_t operator()(const event::Event &s) const noexcept
+    {
+        return std::hash<int>{}(s.get_fd()->get_posix_descriptor());
+    }
+};

@@ -3,6 +3,9 @@
 #include <mutex>
 #include <queue>
 
+namespace threading
+{
+
 template <typename T> class queue
 {
   public:
@@ -39,3 +42,5 @@ template <typename T> class queue
     std::mutex mutex_;
     std::condition_variable cv;
 };
+
+} // namespace threading

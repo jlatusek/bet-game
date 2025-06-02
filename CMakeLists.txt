@@ -28,6 +28,7 @@ find_package(GTest REQUIRED)
 add_executable(BetTest
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/tests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/queue.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/messages.cpp
 )
 target_link_libraries(BetTest GTest::gtest GTest::gtest_main io)
 

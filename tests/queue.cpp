@@ -3,7 +3,7 @@
 #include <thread>
 #include <vector>
 
-#include "queue.h"
+#include "threading/queue.h"
 
 class QtestClass
 {
@@ -20,7 +20,7 @@ class QtestClass
 
 TEST(Queue, add)
 {
-    queue<int> q;
+    threading::queue<int> q;
     for (auto i = 0; i < 10; ++i)
     {
         q.push(i);
@@ -35,7 +35,7 @@ TEST(Queue, add)
 
 TEST(Queue, add_no_trival)
 {
-    queue<QtestClass> q;
+    threading::queue<QtestClass> q;
     for (auto i = 0; i < 10; ++i)
     {
         q.push(QtestClass(i));
@@ -50,7 +50,7 @@ TEST(Queue, add_no_trival)
 
 TEST(Queue, ConcurrentAccess)
 {
-    queue<int> q;
+    threading::queue<int> q;
     constexpr int producer_cnt = 4;
     constexpr int consumer_cnt = 4;
     constexpr int items_per_producer = 25;

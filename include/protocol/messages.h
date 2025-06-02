@@ -21,19 +21,21 @@ template <uint32_t bit_len> class UnsignedField
         }
     }
 
-    unsigned int serialize() const
+    unsigned int getValue() const
     {
         return value_;
     }
 
-    UnsignedField operator=(const unsigned int value)
+    UnsignedField &operator=(const unsigned int value)
     {
-        return UnsignedField(value);
+        value_ = value;
+        return *this;
     }
 
-    UnsignedField operator|=(const unsigned int value)
+    UnsignedField &operator|=(const unsigned int value)
     {
-        return UnsignedField(value_ | value);
+        value_ |= value;
+        return *this;
     }
 
   private:
@@ -57,10 +59,10 @@ class Header
     [[nodiscard]] std::array<unsigned int, 4> serialize() const
     {
         std::array<unsigned int, 4> buff = {};
-        buff[0] = ver.serialize() << 5 | len.serialize();
-        buff[1] = type.serialize();
-        buff[2] = client_id.serialize() & 0xFF00 >> 8;
-        buff[3] = client_id.serialize() & 0xFF;
+        buff[0] = ver.getValue() << 5 | len.getValue();
+        buff[1] = type.getValue();
+        buff[2] = client_id.getValue() & 0xFF00 >> 8;
+        buff[3] = client_id.getValue() & 0xFF;
         return buff;
     }
 

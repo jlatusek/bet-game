@@ -1,6 +1,6 @@
-#include "../../include/event/event.h"
+#include "event/event.h"
 
-event::Event::Event(io::FileDescriptor::sptr fd, std::set<EPOLL_EVENTS> events)
+event::Event::Event(std::shared_ptr<io::FileDescriptor> fd, std::set<EPOLL_EVENTS> events)
     : fd(std::move(fd)), listen_events(std::move(events))
 {
 }
@@ -15,7 +15,7 @@ unsigned int event::Event::get_posix_event() const
     return posix_ev;
 }
 
-io::FileDescriptor::sptr event::Event::get_fd() const
+std::shared_ptr<io::FileDescriptor> event::Event::get_fd() const
 {
     return fd;
 }

@@ -1,0 +1,19 @@
+syntax = 'proto3';
+
+package bet_game.v1;
+
+enum Version {
+  VERSION_V1 = 0;
+}
+
+enum Type {
+  TYPE_BEGASEP_ACCEPT = 0;
+  TYPE_BEGASEP_OPEN = 1;
+}
+
+message Header {
+  Version ver = 1;
+  uint32 len = 2;
+  uint32 type = 3;
+  uint32 client_id = 4;
+}

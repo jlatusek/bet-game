@@ -1,5 +1,5 @@
 #include "config.h"
-#include "socket.h"
+#include "io/socket.h"
 #include "tools.h"
 
 #include <arpa/inet.h>
@@ -35,7 +35,7 @@ int bet_game(int sockfd)
 
 int main(int argc, char *argv[])
 {
-    auto socket = std::make_unique<io::socket>(AF_INET, SOCK_STREAM, 0);
+    auto socket = std::make_unique<io::Socket>(AF_INET, SOCK_STREAM, 0);
     socket->connect(SERVER_PORT, "127.0.0.1");
 
     auto msg = socket->receive();

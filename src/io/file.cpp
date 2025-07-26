@@ -3,6 +3,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <format>
+#include <unistd.h>
 
 io::FileDescriptor::FileDescriptor(const int fd) : fd(fd)
 {

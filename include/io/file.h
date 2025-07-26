@@ -1,5 +1,5 @@
 #pragma once
-#include <memory>
+#include <string>
 
 namespace io
 {
@@ -8,8 +8,6 @@ class FileDescriptor
   public:
     explicit FileDescriptor(int fd);
     virtual ~FileDescriptor() = default;
-    typedef std::shared_ptr<FileDescriptor> sptr;
-    typedef std::unique_ptr<FileDescriptor> uptr;
 
     virtual void send(const std::string &);
     [[nodiscard]] virtual std::string receive();

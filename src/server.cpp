@@ -1,107 +1,91 @@
-#include "config.h"
-#include "epoll.h"
-#include "io/socket.h"
-#include "threading/thread_pool.h"
-#include "tools.h"
-
-#include <arpa/inet.h>
-#include <cstring>
-#include <memory>
+#include <netdb.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-#include <csignal>
-#include <fcntl.h>
-#include <memory>
-#include <sys/epoll.h>
-#include <sys/signalfd.h>
-
-std::shared_ptr<io::FileDescriptor> listen_signal_events(Epoll &);
+#define BUF_SIZE 500
 
 int main(int argc, char *argv[])
 {
-    auto socket = std::make_shared<io::Socket>(AF_INET, SOCK_STREAM, 0);
-    socket->bind(SERVER_PORT);
-    socket->listen(BEGASEP_NUM_CLIENTS);
+    int sfd, s;
+    char buf[BUF_SIZE];
+    ssize_t nread;
+    socklen_t peer_addrlen;
+    struct addrinfo hints;
+    struct addrinfo *result, *rp;
+    struct sockaddr_storage peer_addr;
 
-#define MAX_EVENTS 10
-    int listen_sock = socket->get_posix_descriptor();
+    if (argc != 2)
+    {
+        fprintf(stderr, "Usage: %s port\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
 
-    Epoll epoll{};
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
+    hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
+    hints.ai_flags = AI_PASSIVE;    /* For wildcard IP address */
+    hints.ai_protocol = 0;          /* Any protocol */
+    hints.ai_canonname = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
 
-    auto signal_fd = listen_signal_events(epoll);
-    threading::thread_pool tp(WORKERS);
+    s = getaddrinfo(NULL, argv[1], &hints, &result);
+    if (s != 0)
+    {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+        exit(EXIT_FAILURE);
+    }
 
-    tp.register_event_handler(std::make_shared<event::server_socket_ev_handler>(
-        socket, std::make_shared<event::Event>(socket, std::set({EPOLL_EVENTS::EPOLLIN}))));
+    /* getaddrinfo() returns a list of address structures.
+       Try each address until we successfully bind(2).
+       If socket(2) (or bind(2)) fails, we (close the socket
+       and) try the next address. */
 
-    tp.register_event_handler(std::make_shared<event::signal_ev_handler>(
-        std::make_shared<event::Event>(socket, std::set({EPOLL_EVENTS::EPOLLIN}))));
+    for (rp = result; rp != NULL; rp = rp->ai_next)
+    {
+        sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (sfd == -1)
+            continue;
+
+        if (bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
+            break; /* Success */
+
+        close(sfd);
+    }
+
+    freeaddrinfo(result); /* No longer needed */
+
+    if (rp == NULL)
+    { /* No address succeeded */
+        fprintf(stderr, "Could not bind\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Read datagrams and echo them back to sender. */
 
     for (;;)
     {
-        auto captured_events = epoll.wait();
-        for (auto &event : captured_events)
+        char host[NI_MAXHOST], service[NI_MAXSERV];
+
+        peer_addrlen = sizeof(peer_addr);
+        nread = recvfrom(sfd, buf, BUF_SIZE, 0, (struct sockaddr *)&peer_addr, &peer_addrlen);
+        if (nread == -1)
+            continue; /* Ignore failed request */
+
+        s = getnameinfo((struct sockaddr *)&peer_addr, peer_addrlen, host, NI_MAXHOST, service, NI_MAXSERV,
+                        NI_NUMERICSERV);
+        if (s == 0)
+            printf("Received %zd bytes from %s:%s\n", nread, host, service);
+        else
+            fprintf(stderr, "getnameinfo: %s\n", gai_strerror(s));
+
+        if (sendto(sfd, buf, nread, 0, (struct sockaddr *)&peer_addr, peer_addrlen) != nread)
         {
-            if (event.get_fd()->get_posix_descriptor() == listen_sock)
-            {
-                auto conn_sock = socket->accept();
-                conn_sock->set_non_blocking();
-                epoll.add(event::Event(conn_sock, {
-                                                      EPOLL_EVENTS::EPOLLIN,
-                                                      EPOLL_EVENTS::EPOLLET,
-                                                      EPOLL_EVENTS::EPOLLONESHOT,
-                                                  }));
-            }
-            else if (event.get_fd()->get_posix_descriptor() == signal_fd->get_posix_descriptor())
-            {
-                std::cout << "Keyboard event occurred" << std::endl;
-                signalfd_siginfo buff[10];
-                while (int r = read(signal_fd->get_posix_descriptor(), buff, sizeof(buff)) != -1)
-                {
-                    std::cout << buff[0].ssi_signo << " " << std::endl;
-                }
-                if (errno == EAGAIN)
-                {
-                    std::cout << "Ales gut" << std::endl;
-                }
-                else
-                {
-                    std::cout << "other error" << strerror(errno) << std::endl;
-                }
-                epoll.modify(event::Event(signal_fd, {
-                                                         EPOLL_EVENTS::EPOLLIN,
-                                                         EPOLL_EVENTS::EPOLLET,
-                                                         EPOLL_EVENTS::EPOLLONESHOT,
-                                                     }));
-                return 0;
-            }
-            else
-            {
-                std::cout << "Event fd:" << event.get_fd()->get_posix_descriptor() << std::endl;
-            }
+            fprintf(stderr, "Error sending response\n");
         }
     }
-
-    return 0;
-}
-
-io::FileDescriptor::sptr listen_signal_events(Epoll &epoll)
-{
-    sigset_t mask;
-    sigemptyset(&mask);
-    sigaddset(&mask, SIGTERM);
-    sigaddset(&mask, SIGINT);
-    sigaddset(&mask, SIGUSR1);
-    sigaddset(&mask, SIGUSR2);
-    int r = sigprocmask(SIG_BLOCK, &mask, 0);
-
-    auto signal_fd = std::make_shared<io::FileDescriptor>(signalfd(-1, &mask, O_NONBLOCK));
-
-    epoll.add(event::Event(signal_fd, {
-                                          EPOLL_EVENTS::EPOLLIN,
-                                          EPOLL_EVENTS::EPOLLET,
-                                          EPOLL_EVENTS::EPOLLONESHOT,
-                                      }));
-    return signal_fd;
 }
